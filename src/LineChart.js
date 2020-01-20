@@ -36,7 +36,10 @@ class LineChart extends Component {
             const idx = Math.round((xTouch / this.gridSize.width) * (this.props.data.length - 1));
             if (this.state.tooltipIndex != idx) {
                 if (idx >= 0 && idx <= this.props.data.length - 1) {
-                    this.setState({ tooltipIndex: idx });
+                    this.setState({ tooltipIndex: idx }, () => {
+                        const dataValue = this.props.data[idx];
+                        this.props.onPress(dataValue, idx);
+                    });
                 } else {
                     this.setState({ tooltipIndex: undefined });
                 }
@@ -598,6 +601,7 @@ const defaultConfig = {
 };
 
 LineChart.defaultProps = {
+    onPress: () => { },
     data: [1.52, 1.42, 1.58, 1.39, 1.60, 1.45, 1.55],
     xLabels: ["Out", "Nov", "Dez", "Jan", "Fev", "Mar", "Abr"],
     style: {},
