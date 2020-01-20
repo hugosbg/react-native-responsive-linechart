@@ -15,6 +15,8 @@ class LineChart extends Component {
             isInitialized: false,
         };
 
+        this.scrollRef = React.createRef();
+
         // Memoize data calculations for rendering
         this.recalculate = memoizeOne(this.recalculate);
 
@@ -80,14 +82,13 @@ class LineChart extends Component {
         }
 
         this.top = this.highestYLabel;
-        this.bottom = 0 //this.lowestYLabel;
+        this.bottom = 0;
         this.range = this.top - this.bottom;
 
         const labelAmount = Math.ceil(this.range / grid.stepSize) - 1;
 
         this.yLabels = Array(labelAmount)
             .fill()
-            //.map((e, i) => this.lowestYLabel + grid.stepSize * i);
             .map((e, i) => grid.stepSize * i);
 
         if (!yAxis.visible) {
@@ -192,23 +193,16 @@ class LineChart extends Component {
         return points;
     }
 
-    onLayout = event => {
-        const { width, height } = event.nativeEvent.layout;
-        this.setState({ dimensions: { width, height } });
-    };
-
     renderYAxisLabels = config => {
         const { yAxis, insetX } = config;
         const { dimensions: { width } } = this.state;
 
         if (yAxis.visible && this.yLabels) {
-            //return this.yLabels.slice(1, this.yLabels.length - 1).map(yLabel => (
             return this.yLabels.slice(0, this.yLabels.length - 1).map(yLabel => (
                 <Text
                     key={yLabel}
                     fill={yAxis.labelColor}
                     fontSize={yAxis.labelFontSize}
-                    //x={insetX + this.yAxisWidth - 5}
                     x={width - 15}
                     y={this.realY(yLabel)}
                     textAnchor="end"
@@ -222,7 +216,7 @@ class LineChart extends Component {
         }
 
         return undefined;
-    };
+    }
 
     renderXAxisLabels = config => {
         const { xAxis } = config;
@@ -247,7 +241,7 @@ class LineChart extends Component {
         }
 
         return undefined;
-    };
+    }
 
     renderGrid = config => {
         const { grid } = config;
@@ -275,7 +269,7 @@ class LineChart extends Component {
         }
 
         return undefined;
-    };
+    }
 
     renderDataArea = config => {
         const { area } = config;
@@ -294,7 +288,7 @@ class LineChart extends Component {
         }
 
         return undefined;
-    };
+    }
 
     renderDataLine = config => {
         const { line } = config;
@@ -312,7 +306,7 @@ class LineChart extends Component {
         }
 
         return undefined;
-    };
+    }
 
     renderDataPoints = config => {
         const { dataPoint } = config;
@@ -342,10 +336,11 @@ class LineChart extends Component {
             ));
         }
         return undefined;
-    };
+    }
 
     renderTooltip = config => {
-        if (this.state.tooltipIndex === undefined) {
+        if (this.state.tooltipIndex === undefined ||
+            this.points[this.state.tooltipIndex] === undefined) {
             return undefined;
         }
 
@@ -396,7 +391,7 @@ class LineChart extends Component {
                 </Text>
             </React.Fragment>
         );
-    };
+    }
 
     renderLineOrange = () => {
         const { dimensions: { width } } = this.state;
@@ -445,16 +440,25 @@ class LineChart extends Component {
         );
     }
 
-    mergeConfigs = memoizeOne((c1, c2) => deepmerge(c1, c2));
+    onLayout = event => {
+        const { width, height } = event.nativeEvent.layout;
+        this.setState({ dimensions: { width, height } });
+    }
 
     componentDidUpdate() {
-        const { dimensions, isInitialized } = this.state;
-        if (this.scrollRef && dimensions && !isInitialized) {
-            this.setState({ isInitialized: true }, () => {
-                this.scrollRef.scrollTo({ x: dimensions.width });
-            })
+        if (this.props.reset) {
+            this.scrollRef.scrollTo({ y: 0, x: this.graphicWidth, animated: false });
         }
-    };
+    }
+
+    get graphicWidth() {
+        const { width: widthfull } = Dimensions.get('window');
+        const monthWidth = 100;
+        const graphicWidth = this.props.data.length * monthWidth;
+        return this.props.data.length > 3 ? graphicWidth : widthfull - 10;
+    }
+
+    mergeConfigs = memoizeOne((c1, c2) => deepmerge(c1, c2))
 
     render() {
         if (this.props.data.length === 0) {
@@ -470,10 +474,7 @@ class LineChart extends Component {
             var { height } = dimensions;
         }
 
-        const { width: widthfull } = Dimensions.get('window');
-        const monthWidth = 100;
-        const graphicWidth = this.props.data.length * monthWidth;
-        const width = this.props.data.length > 3 ? graphicWidth : widthfull;
+        const width = this.graphicWidth;
 
         // Don't worry, this is memoized
         this.recalculate(this.state.dimensions, this.props.data, this.props.config);
@@ -488,7 +489,10 @@ class LineChart extends Component {
         return (
             <ScrollView
                 horizontal
-                ref={ref => this.scrollRef = ref}
+                ref={ref => { this.scrollRef = ref }}
+                onLayout={() => {
+                    this.scrollRef.scrollTo({ y: 0, x: width, animated: false });
+                }}
                 showsVerticalScrollIndicator={false}
                 showsHorizontalScrollIndicator={false}>
 
@@ -496,9 +500,7 @@ class LineChart extends Component {
                     style={Object.assign({ alignSelf: "stretch" }, this.props.style, { backgroundColor, width })}
                     onLayout={this.onLayout}
                     {..._.get(this._panResponder, "panHandlers", {})}
-                    ref={view => {
-                        this.myComponent = view;
-                    }}
+                    ref={view => { this.myComponent = view }}
                 >
                     {this.points ? (
                         <Svg width={width} height={height}>
@@ -601,6 +603,7 @@ const defaultConfig = {
 };
 
 LineChart.defaultProps = {
+    reset: false,
     onPress: () => { },
     data: [1.52, 1.42, 1.58, 1.39, 1.60, 1.45, 1.55],
     xLabels: ["Out", "Nov", "Dez", "Jan", "Fev", "Mar", "Abr"],
