@@ -85,7 +85,8 @@ class LineChart extends Component {
         this.bottom = 0;
         this.range = this.top - this.bottom;
 
-        const labelAmount = Math.ceil(this.range / grid.stepSize) - 1;
+        //const labelAmount = Math.ceil(this.range / grid.stepSize) - 1;
+        const labelAmount = Math.ceil(this.highestDataPoint / grid.stepSize) + 1;
 
         this.yLabels = Array(labelAmount)
             .fill()
@@ -198,7 +199,8 @@ class LineChart extends Component {
         const { dimensions: { width } } = this.state;
 
         if (yAxis.visible && this.yLabels) {
-            return this.yLabels.slice(0, this.yLabels.length - 1).map(yLabel => (
+            
+            return this.yLabels.slice(0, this.yLabels.length).map(yLabel => (
                 <Text
                     key={yLabel}
                     fill={yAxis.labelColor}
@@ -249,7 +251,7 @@ class LineChart extends Component {
         if (grid.visible) {
             return (
                 <React.Fragment>
-                    {this.yLabels.slice(0, -1).map(yLabel => {
+                    {this.yLabels.slice(0, this.yLabels.length).map(yLabel => {
 
                         return (
                             <Line
@@ -399,7 +401,7 @@ class LineChart extends Component {
         const { data } = this.props;
         const avg = data.reduce((ac, vl, i, ar) => ac + (vl / ar.length), 0);
 
-        const dataY = this.realY(avg) + 2;
+        const dataY = this.realY(avg);
 
         const label = `R$${String(avg.toFixed(2).replace('.', ','))}`;
         const size = label.length;
