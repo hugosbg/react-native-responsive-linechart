@@ -15,7 +15,7 @@ class LineChart extends Component {
             isInitialized: false,
         };
 
-        this.scrollRef = React.createRef();
+        this.scrollRef = null;
 
         // Memoize data calculations for rendering
         this.recalculate = memoizeOne(this.recalculate);
@@ -199,7 +199,7 @@ class LineChart extends Component {
         const { dimensions: { width } } = this.state;
 
         if (yAxis.visible && this.yLabels) {
-            
+
             return this.yLabels.slice(0, this.yLabels.length).map(yLabel => (
                 <Text
                     key={yLabel}
@@ -448,7 +448,7 @@ class LineChart extends Component {
     }
 
     componentDidUpdate() {
-        if (this.props.reset) {
+        if (this.props.reset && this.scrollRef) {
             this.scrollRef.scrollTo({ y: 0, x: this.graphicWidth, animated: false });
         }
     }
@@ -493,7 +493,9 @@ class LineChart extends Component {
                 horizontal
                 ref={ref => { this.scrollRef = ref }}
                 onLayout={() => {
-                    this.scrollRef.scrollTo({ y: 0, x: width, animated: false });
+                    if (this.scrollRef) {
+                        this.scrollRef.scrollTo({ y: 0, x: width, animated: false });
+                    }
                 }}
                 showsVerticalScrollIndicator={false}
                 showsHorizontalScrollIndicator={false}>
